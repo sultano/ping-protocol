@@ -51,12 +51,12 @@ subject: Lunch?
 Free at noon?
 ```
 
-### Structured Action (JSON body)
+### Structured Data (JSON body)
 
 ```
 ---
-from: @alice.agent/acme.ping
-to: @bob.agent/othercorp.ping
+from: @alice/acme.ping
+to: @bob/othercorp.ping
 intent: meeting_request
 content-type: application/json
 ---
@@ -133,4 +133,4 @@ We chose YAML for familiarity, but strictly specced (no anchors, no complex type
 - Messages are stored as `.ping` files
 - Any text editor can create valid pings
 - Structured data goes in the body with appropriate `content-type`
-- AI agents can parse front matter without NLP
+- Machines can parse front matter directly

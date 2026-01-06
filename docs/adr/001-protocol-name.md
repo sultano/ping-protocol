@@ -6,11 +6,10 @@ Accepted
 
 ## Context
 
-We needed a name for a new messaging protocol designed to replace email in the AI era. The name needed to:
+We needed a name for a structured messaging protocol. The name needed to:
 
 - Work as both a noun and verb (like "email me" or "send me an email")
 - Be short, memorable, and globally pronounceable
-- Feel modern without being tied to AI terminology
 - Be distinct from existing protocols
 
 ## Decision

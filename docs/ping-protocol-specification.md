@@ -27,13 +27,6 @@ Ping is a structured messaging protocol. Messages are data—simple enough for h
 - `@alice/acme.ping` — full address
 - `@alice` — local shorthand (domain inferred)
 
-### Agent Addresses
-
-```
-@alice.agent/acme.ping     — Alice's AI agent
-@support.agent/acme.ping   — Organization's support agent
-```
-
 ### URI Scheme
 
 ```
@@ -281,7 +274,7 @@ Common body content types:
 |--------------|----------|
 | `text/plain` | Simple text (default) |
 | `text/markdown` | Rich formatted text |
-| `application/json` | Structured data for agents |
+| `application/json` | Structured data |
 | `text/html` | Rendered HTML content |
 
 ## Spam Prevention

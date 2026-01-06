@@ -48,7 +48,6 @@ This means one protocol for:
 ```
 @alice/acme.ping      — Full address
 @alice                — Local shorthand
-@alice.agent/acme.ping — AI agent
 ```
 
 ### Message Format

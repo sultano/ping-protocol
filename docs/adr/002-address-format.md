@@ -9,9 +9,8 @@ Accepted
 We needed an addressing scheme for Ping that:
 
 - Is distinct from email's `user@domain.com`
-- Puts the human/agent name first
+- Puts the name first (human-readable)
 - Supports local shorthand within the same domain
-- Works for both humans and AI agents
 - Is URL-friendly with a URI scheme
 
 ## Decision
@@ -23,16 +22,6 @@ Use the format `@name/domain.ext` with the domain portion optional for local add
 ```
 @alice/acme.ping      → full address
 @alice                → local (domain inferred from context)
-```
-
-### Agent Addressing
-
-Agents use the same format with a `.agent` suffix on the name:
-
-```
-@alice/acme.ping           → Alice (human)
-@alice.agent/acme.ping     → Alice's AI agent
-@support.agent/acme.ping   → Company's support agent
 ```
 
 ### URI Scheme
@@ -53,8 +42,7 @@ Analogous to `mailto:alice@example.com`.
 |--------|-------|------|
 | Format | `alice@domain.com` | `@alice/domain.ping` |
 | URI scheme | `mailto:` | `ping:` |
-| Name prominence | Domain feels equal | Name comes first—human-centric |
-| Agent-ready | Hackish (`alice+bot@`) | Native (`@alice.agent/`) |
+| Name prominence | Domain feels equal | Name comes first |
 
 ### Why `/` Instead of `@`
 
@@ -73,8 +61,6 @@ Within `acme.ping`, users can simply use `@alice` instead of the full `@alice/ac
 |----------|---------|
 | Ping a colleague locally | `@bob` |
 | Ping someone external | `@bob/othercorp.ping` |
-| Ping your own agent | `@me.agent` |
-| Ping a company's AI | `@support.agent/acme.ping` |
 
 ## Consequences
 
