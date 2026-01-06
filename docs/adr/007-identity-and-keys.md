@@ -138,7 +138,30 @@ Multi-key model:
 | Signal | Phone number = identity |
 | Nostr | Single key = identity (sync problem) |
 | GitHub SSH | Multiple keys per account |
+| SimpleX | No identity, only per-conversation queues |
 | **Ping** | Multiple keys, address as alias |
+
+### Considered: Key-Per-Relationship Model
+
+We considered a model where each relationship gets a unique key:
+
+```
+Alice gives Bob: alice-bob-key
+Alice gives Carol: alice-carol-key
+```
+
+**Potential benefits:**
+- Leak tracing (spam on Bob's key = Bob leaked it)
+- Granular revocation (cut off Bob without affecting Carol)
+- Privacy (harder to correlate relationships)
+
+**Why rejected:**
+- Mandatory signatures already prevent spoofing
+- If anyone can request a key, you're back to managing incoming requests anyway
+- Adds significant UX complexity for marginal benefit
+- Block-by-key achieves similar control with less complexity
+
+SimpleX Chat uses this model (no user IDs, only per-conversation queues), but for Ping the complexity wasn't justified given cryptographic identity already solves the core problems.
 
 ## Consequences
 

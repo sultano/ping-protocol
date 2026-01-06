@@ -136,6 +136,39 @@ Benefits:
 | GraphQL | Overkill for simple operations |
 | gRPC | Requires protobuf, less human-readable |
 | REST | Multiple endpoints, doesn't fit RPC pattern |
+| JSON-RPC | Standard, but why use JSON when we have Ping format? |
+| Amazon Ion | Richer types, but adds dependency and complexity |
+
+We use Ping's own format for RPC calls. This means the same envelope format (`<meta>` + body) works for both messages and protocol operations. One format to parse, one format to generate.
+
+### Why Pull Solves Moderation
+
+A key insight: the pull model handles spam/abuse by design.
+
+**Push model (email):**
+```
+Spammer → pushes into your inbox → you deal with it after
+```
+
+**Pull model (Ping):**
+```
+Spammer → sends notification → you see unknown sender → ignore it
+```
+
+The receiver decides at the notification stage whether to fetch. Unwanted content never lands in your inbox because you never pulled it. No need for complex spam filtering rules—just don't fetch from senders you don't recognize or trust.
+
+### Shared Inboxes and Mailing Lists
+
+We considered protocol-level support for:
+- **Shared inboxes** (`@support` where multiple people handle messages)
+- **Mailing lists** (one address that broadcasts to subscribers)
+
+**Decision:** These are authorization patterns, not protocol concerns.
+
+- Shared inbox = multiple people authorized to act as one address
+- Mailing list = multi-recipient where recipient list = subscriber list
+
+The protocol just sees addresses and keys. How an organization manages who can access an address is an implementation detail.
 
 ## Consequences
 

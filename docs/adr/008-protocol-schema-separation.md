@@ -151,6 +151,35 @@ com.acme.invoice.v1       # custom schema
 
 Protocol doesn't mandate naming convention, just warns that generic names risk collision.
 
+### Influenced by CloudEvents
+
+We studied CloudEvents' approach:
+- `specversion` - version of CloudEvents spec itself
+- `type` - identifies the event schema (recommends reverse-DNS)
+
+**Why Ping differs:**
+
+CloudEvents has separate `specversion` and `type`. We use only `type` with version embedded (e.g., `messaging.message.v1`).
+
+Reasoning:
+- The envelope format (`<meta>` + body) won't change
+- Only message types evolve, not the protocol structure
+- Adding `specversion` is unnecessary complexity
+- Version in the type (`.v1`, `.v2`) handles schema evolution
+
+If we ever need to change the envelope format fundamentally, that would be Ping 2.0—a new protocol, not a version field.
+
+### Why Not Mandate Reverse-DNS?
+
+CloudEvents recommends reverse-DNS naming (e.g., `com.example.event.v1`). We considered mandating this but decided against it:
+
+- Protocol shouldn't be a gatekeeper
+- Different organizations have different conventions
+- Simple names work fine for internal use
+- Collision is the user's problem to solve
+
+We document the risk, not the solution.
+
 ## Consequences
 
 - Protocol stays minimal and stable
