@@ -6,6 +6,8 @@ Version: 0.2.0 (Draft)
 
 Ping is a transport protocol for federated messaging. It defines how messages flow between servers. What messages mean is defined by schemas.
 
+**Federated** means there's no central authority. Anyone can run a Ping server on their own domain. Servers discover each other via DNS and communicate directly, similar to how email works but with modern security.
+
 ```
 Ping      = Protocol (transport, routing, identity, keys)
 Schema    = Collection of related message types
@@ -19,7 +21,8 @@ Type      = Individual message definition
 | Transport only | Ping moves envelopes; schemas give them meaning |
 | Pull-based | Receivers fetch messages from senders |
 | Key-based identity | Public keys are identity; addresses are aliases |
-| LLM-friendly | Format designed for AI readability |
+| LLM-friendly | XML-style tags are easier for AI to parse than JSON brackets or YAML indentation |
+| Federated | No central server; anyone can run a Ping server and communicate with others |
 | Simple | Minimal spec, easy to implement |
 
 ## Message Format
@@ -181,6 +184,7 @@ Content-Type: application/ping
 | `keys` | Fetch user's public keys | `address` |
 | `notify` | Alert recipient of new message | `id`, `from`, `to` |
 | `fetch` | Retrieve message from outbox | `id`, `recipient` |
+| `update` | Notify recipient of edit/delete | `id`, `action` |
 | `ping` | Health check | none |
 
 ### Request Example

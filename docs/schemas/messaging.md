@@ -93,7 +93,7 @@ Lightweight reaction to a message.
 |-------|------|----------|-------------|
 | `type` | string | Yes | `messaging.reaction.v1` |
 | `reaction-to` | string | Yes | ID of message being reacted to |
-| `emoji` | string | Yes | Emoji reaction |
+| `emoji` | string | Yes | Emoji code (e.g., `thumbsup`, `heart`, `laughing`) |
 
 **Example:**
 
@@ -110,6 +110,8 @@ reaction-to: msg123
 emoji: thumbsup
 </meta>
 ```
+
+Emoji codes are short string identifiers. Clients map these to actual emoji characters for display.
 
 ### messaging.typing.v1
 
@@ -206,16 +208,21 @@ Please review the attached report.
 
 ### Fetching Attachments
 
-Attachments are fetched via the `fetch` RPC method:
+Attachments are fetched via the `fetch` RPC method (same as messages):
 
 ```
 <meta>
+id: req789
+from: @bob/other.ping
+signature: ed25519:x1y2z3...
 method: fetch
 params:
   id: att001
   recipient: @bob
 </meta>
 ```
+
+The server returns the attachment content in the response body.
 
 ## Priority
 

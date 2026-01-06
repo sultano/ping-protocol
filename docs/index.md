@@ -19,8 +19,8 @@ Type      = Individual message definition
 | Transport only | Ping moves envelopes; schemas give them meaning |
 | Pull-based | Receivers fetch messages from senders |
 | Key-based identity | Public keys are identity; addresses are aliases |
-| LLM-friendly | Format designed for AI readability |
-| Federated | Open, decentralized, no single owner |
+| LLM-friendly | XML-style tags are easier for AI to parse than JSON brackets or YAML indentation |
+| Federated | No central server; anyone can run a Ping server and talk to others (like email) |
 
 ## Quick Example
 
@@ -59,7 +59,7 @@ This is a message sent over **Ping**.
 | [ADR-003](./adr/003-message-format.md) | Message Format | Accepted (Revised) |
 | [ADR-004](./adr/004-transport-layer.md) | Transport Layer | Accepted (Revised) |
 | [ADR-005](./adr/005-discovery-mechanism.md) | Discovery Mechanism | Accepted (Revised) |
-| [ADR-006](./adr/006-encryption-and-signatures.md) | Encryption and Signatures | Accepted |
+| [ADR-006](./adr/006-encryption-and-signatures.md) | Encryption and Signatures | Accepted (Revised) |
 | [ADR-007](./adr/007-identity-and-keys.md) | Identity and Keys | Accepted |
 | [ADR-008](./adr/008-protocol-schema-separation.md) | Protocol vs Schema Separation | Accepted |
 

@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted (Revised)
 
 ## Context
 
@@ -26,25 +26,30 @@ TLS 1.3 mandatory for all connections:
 - Client-to-server: HTTPS/WSS
 - No plaintext ever
 
-This protects pings in transit.
+This protects messages in transit.
 
 ## Layer 2: Message Signatures (Required)
 
-Every ping is signed by the sender:
+Every message is signed by the sender:
 
-```yaml
----
+```
+<meta>
+id: msg123
 from: @alice/acme.ping
 to: @bob/other.ping
+timestamp: 2024-01-03T10:00:00Z
 signature: ed25519:a1b2c3d4...
----
+</meta>
+
+Message body here.
 ```
 
 ### How It Works
 
-1. Alice's client signs the ping with her private key
-2. Bob's server fetches Alice's public key (from `acme.ping` DNS TXT)
-3. Verifies signature before accepting
+1. Alice's client signs the message with her private key
+2. Bob's server fetches Alice's public keys via RPC (`method: keys`)
+3. Verifies signature against any of her registered keys
+4. Rejects if no key matches
 
 ### What This Solves
 
@@ -54,9 +59,17 @@ signature: ed25519:a1b2c3d4...
 | Tampering | Message can't be modified |
 | Non-repudiation | Alice provably sent it |
 
+### What's Signed
+
+The signature covers:
+- All meta fields (excluding the `signature` field itself)
+- The body content
+
+Canonical form: meta content + newline + body content, UTF-8 encoded.
+
 ## Layer 3: End-to-End Encryption (Optional)
 
-For sensitive pings, full E2E so even servers can't read the body.
+For sensitive messages, full E2E so even servers can't read the body.
 
 ### Recommended: MLS (Messaging Layer Security)
 
@@ -65,13 +78,17 @@ For sensitive pings, full E2E so even servers can't read the body.
 - Forward secrecy
 - Scales to groups
 
-```yaml
----
+```
+<meta>
+id: msg123
 from: @alice/acme.ping
 to: @bob/other.ping
+timestamp: 2024-01-03T10:00:00Z
+signature: ed25519:a1b2c3d4...
 encryption: mls
 key-id: abc123
----
+</meta>
+
 [encrypted blob]
 ```
 
@@ -79,7 +96,7 @@ Only Bob's client can decrypt. Servers just route the blob.
 
 ### Alternative
 
-Simpler NaCl box encryption for 1:1 pings if MLS is too heavy.
+Simpler NaCl box encryption for 1:1 messages if MLS is too heavy.
 
 ## Signature Algorithm
 
@@ -91,13 +108,24 @@ Simpler NaCl box encryption for 1:1 pings if MLS is too heavy.
 - Widely supported
 - No configuration needed (unlike RSA key sizes)
 
+## Multi-Key Verification
+
+When a user has multiple keys (e.g., laptop, phone):
+
+1. Fetch all keys for the sender via `keys` RPC method
+2. Try verifying signature against each key
+3. Accept if ANY key matches
+4. Reject only if NO keys match
+
+This supports multi-device use without requiring key coordination.
+
 ## Rationale
 
 ### Why Mandatory Signatures?
 
 Email's biggest security failure is spoofing. Anyone can send email claiming to be anyone. By requiring signatures at the protocol level:
 
-- No unsigned pings accepted
+- No unsigned messages accepted
 - Spoofing eliminated by design
 - Trust is cryptographic, not policy-based
 
@@ -112,6 +140,6 @@ Email's biggest security failure is spoofing. Anyone can send email claiming to 
 
 - All servers must implement Ed25519 verification
 - All clients must implement Ed25519 signing
-- Public keys distributed via DNS
+- Public keys fetched via RPC (not DNS)
 - E2E encryption available but not required
 - Spam prevention through cryptographic identity
