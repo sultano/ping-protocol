@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted (Revised)
 
 ## Context
 
@@ -11,95 +11,136 @@ We needed to decide how ping messages are transported between:
 - Server to server (federation)
 - Client to server (user interaction)
 
-The transport must be secure, firewall-friendly, and use existing infrastructure where possible.
+### Previous Decision
+
+Originally chose REST-style HTTPS endpoints (`POST /inbox`, `GET /keys`). This worked but:
+
+- Multiple endpoints to maintain
+- REST semantics don't fit RPC patterns well
+- Harder to extend with new operations
 
 ## Decision
 
-- **Server-to-Server**: HTTPS POST
-- **Client-to-Server**: HTTPS + WebSocket for real-time
+- **Single RPC endpoint**: `POST /`
+- **Pull-based delivery**: Receivers fetch from senders
+- **Methods in payload**: Operation specified via `method` field
 
-## Server-to-Server Federation
+## Transport
 
-Simple HTTPS POST to the destination server's inbox:
+### Single Endpoint
 
-```http
-POST https://ping.other.ping/inbox
+All operations go through root:
+
+```
+POST /
 Content-Type: application/ping
-Authorization: Ping-Signature <signed-request>
-
----
-from: @alice/acme.ping
-to: @bob/other.ping
-id: 01HX2Z...
-timestamp: 2025-01-03T10:30:00Z
----
-Hey Bob, are you free Friday?
 ```
 
-### Why HTTPS?
+### RPC Methods
 
-- Works everywhere (firewalls, proxies, CDNs)
-- TLS built in
-- Tooling is mature
-- No reinventing the wheel
+| Method | Purpose | Params |
+|--------|---------|--------|
+| `keys` | Fetch user's public keys | `address` |
+| `notify` | Alert recipient of new message | `id`, `from`, `to` |
+| `fetch` | Retrieve message from outbox | `id`, `recipient` |
+| `ping` | Health check | none |
 
-## Client-to-Server
-
-| Method | Use Case |
-|--------|----------|
-| HTTPS POST | Send a ping |
-| HTTPS GET | Fetch inbox, history |
-| WebSocket | Real-time push (new pings, receipts) |
+### Request Format
 
 ```
-wss://ping.acme.ping/stream?token=xxx
+<meta>
+id: req123
+from: @bob/other.ping
+method: keys
+params:
+  address: @alice
+</meta>
 ```
 
-Client connects once, receives pings in real-time.
+### Response Format
 
-## Server Endpoints
+```
+<meta>
+from: @acme.ping
+in-reply-to: req123
+</meta>
 
-Minimal API surface:
-
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/inbox` | POST | Receive incoming pings |
-| `/inbox` | GET | Fetch your pings (authenticated) |
-| `/keys` | GET | Public keys (optional) |
-
-## Request Authentication
-
-HTTP Message Signatures (RFC 9421) for server-to-server authentication:
-
-```http
-POST /inbox HTTP/1.1
-Host: ping.other.ping
-Content-Type: application/ping
-Signature-Input: sig=("@method" "@path" "content-digest");keyid="acme.ping"
-Signature: sig=:base64encodedEd25519signature:
+<body type="yaml">
+keys:
+  - kty: OKP
+    crv: Ed25519
+    kid: laptop
+    x: a1b2c3...
+</body>
 ```
 
-Receiving server:
-1. Fetches `acme.ping`'s public key via DNS
-2. Verifies the HTTP signature
-3. Accepts or rejects
+## Delivery Model (Pull-Based)
+
+### Why Pull Instead of Push?
+
+| Aspect | Push (old email model) | Pull (new) |
+|--------|------------------------|------------|
+| Data ownership | Receiver stores | Sender stores |
+| Spam control | Reactive (block after) | Proactive (choose to fetch) |
+| Offline handling | Sender queues | Sender stores, receiver fetches when ready |
+| Confirmation | Fire and forget | HTTP 200 = delivered |
+
+### Flow
+
+```
+1. Alice stores message in outbox (per-recipient)
+2. Alice's server → notify → Bob's server
+3. Bob's server → fetch → Alice's server
+4. Alice's server returns message
+5. HTTP 200 = Bob has it
+```
+
+### Per-Recipient Outboxes
+
+Sender maintains separate storage per recipient:
+
+```
+Alice's server:
+  outbox/@bob/msg123
+  outbox/@carol/msg123
+```
+
+Benefits:
+- Easy tracking per recipient
+- Clean deletion when fetched
+- No cross-recipient leakage
 
 ## Rationale
+
+### Why Single RPC Endpoint?
+
+| Advantage | Details |
+|-----------|---------|
+| Simpler routing | One endpoint handles all operations |
+| Easy to extend | Add methods without new URLs |
+| Consistent format | All requests use same envelope |
+| Batch-friendly | Could batch multiple operations |
+
+### Why Not REST?
+
+| REST Pattern | Issue |
+|--------------|-------|
+| `GET /keys/@alice` | URL encoding of `@` is messy |
+| Multiple endpoints | More surface area to maintain |
+| HTTP verbs | Don't map cleanly to our operations |
 
 ### Considered Alternatives
 
 | Alternative | Why Not |
 |-------------|---------|
-| SMTP | Ancient, complex, no encryption by default |
-| Matrix | Good but heavy—brings features we don't need |
-| libp2p / P2P | NAT traversal is painful; servers are fine for v1 |
-| Custom TCP | Firewall hell, unnecessary complexity |
-
-HTTPS is boring. Boring is good for infrastructure.
+| GraphQL | Overkill for simple operations |
+| gRPC | Requires protobuf, less human-readable |
+| REST | Multiple endpoints, doesn't fit RPC pattern |
 
 ## Consequences
 
-- All transport is over TLS (mandatory)
-- Servers are simple HTTP services
-- Real-time features use WebSocket
-- No custom protocol to debug
+- All transport is `POST /` with `application/ping`
+- Operations specified via `method` field
+- Pull-based delivery gives receiver control
+- Sender maintains per-recipient outboxes
+- Simpler server implementation (one endpoint)

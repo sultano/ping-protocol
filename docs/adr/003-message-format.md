@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted (Revised)
 
 ## Context
 
@@ -10,127 +10,137 @@ We needed a message format that:
 
 - Is human-readable and human-writable
 - Supports structured metadata for machines
-- Allows flexible body content (text, markdown, JSON, etc.)
-- Is easy to debug and version control
+- Allows flexible body content
+- Works well with LLMs (AI readability)
 - Avoids the complexity of email's MIME format
+
+### Previous Decision
+
+Originally chose YAML front matter (`---` delimiters). This worked but had limitations:
+
+- YAML is indentation-sensitive (problematic for LLMs)
+- JSON brackets are hard for LLMs to match
+- No clear type hints for body format
 
 ## Decision
 
-Use a front matter format with YAML headers followed by a flexible body, similar to Jekyll/Hugo markdown files.
+Use XML-style envelope with `<meta>` block and flexible body.
 
 ## Format Specification
 
 ```
----
-[YAML front matter]
----
-[Body: any content type]
+<meta type="yaml">
+...yaml key-value pairs...
+</meta>
+
+...body content (markdown by default)...
 ```
 
 ### Rules
 
-1. File starts with `---`
-2. Front matter ends with `---`
-3. Everything after is the body
-4. Front matter declares `content-type` if body isn't plain text
-
-### File Extension
-
-`.ping`
+1. `<meta>` block is required
+2. `type` attribute is optional (defaults to `yaml`)
+3. Everything after `</meta>` is the body
+4. Body is markdown by default
+5. Use `<body type="...">` for non-markdown body content
 
 ## Examples
 
-### Simple Text Ping
+### Simple Message
 
 ```
----
+<meta>
+id: msg123
 from: @alice/acme.ping
-to: @bob/acme.ping
-subject: Lunch?
----
-Free at noon?
+to: @bob/other.ping
+timestamp: 2024-01-03T10:00:00Z
+signature: ed25519:a1b2c3...
+type: messaging.message.v1
+</meta>
+
+Hey Bob,
+
+This is **markdown** by default.
 ```
 
-### Structured Data (JSON body)
+### Explicit Meta Type
 
 ```
----
+<meta type="yaml">
+id: msg123
 from: @alice/acme.ping
-to: @bob/othercorp.ping
-intent: meeting_request
-content-type: application/json
----
-{
-  "action": "schedule_meeting",
-  "title": "Project Sync",
-  "proposed_times": ["2025-01-05T10:00Z", "2025-01-05T14:00Z"],
-  "duration_minutes": 30
-}
+</meta>
+
+Body here.
 ```
 
-### Rich Content (Markdown body)
+### Non-Markdown Body
 
 ```
----
-from: @alice/acme.ping
-to: @team/acme.ping
-subject: Weekly Update
-content-type: text/markdown
----
-# Weekly Update
+<meta>
+from: @acme.ping
+in-reply-to: req123
+</meta>
 
-## Done
-- Finished onboarding docs
-- Fixed login bug
-
-## Blocked
-- Waiting on API access
+<body type="yaml">
+keys:
+  - kty: OKP
+    crv: Ed25519
+    kid: laptop
+    x: a1b2c3...
+</body>
 ```
 
-## Front Matter Fields
+### RPC Request (No Body)
 
-### Required
-
-| Field | Description |
-|-------|-------------|
-| `from` | Sender address |
-| `to` | Recipient(s) — array or single |
-| `id` | Unique message ID |
-| `timestamp` | ISO 8601 datetime |
-
-### Optional
-
-| Field | Description |
-|-------|-------------|
-| `subject` | Human-readable subject |
-| `intent` | Semantic type: `fyi`, `action`, `reply`, `receipt` |
-| `content-type` | Body MIME type (default: `text/plain`) |
-| `reply-to` | ID of parent ping |
-| `thread` | Thread ID |
-| `expires` | TTL for ephemeral pings |
-| `signature` | Cryptographic signature |
-| `attachments` | List of attachment references |
+```
+<meta>
+id: req123
+from: @bob/other.ping
+method: keys
+params:
+  address: @alice
+</meta>
+```
 
 ## Rationale
 
-### Why Not Pure JSON?
+### Why XML-Style Tags?
 
 | Advantage | Details |
 |-----------|---------|
-| Human-readable | Open a ping in any text editor |
-| Human-writable | Compose in Notepad if needed |
-| Flexible body | Plain text, Markdown, HTML, JSON |
-| Familiar | Developers know this pattern |
-| Diffable | Easy to version control |
-| Graceful degradation | Even if parsing fails, humans can read it |
+| LLM-friendly | Self-describing tags, no bracket matching |
+| Clear boundaries | `<meta>` and `</meta>` are unambiguous |
+| Type hints | `type` attribute declares format |
+| Flexible | Works with any content in body |
 
-### YAML vs TOML
+### Why Not Pure YAML Front Matter?
 
-We chose YAML for familiarity, but strictly specced (no anchors, no complex types). TOML is acceptable as an alternative.
+| Issue | Details |
+|-------|---------|
+| Indentation | YAML spaces are significant, easy to mess up |
+| LLM errors | AI models struggle with consistent indentation |
+| No type hints | `---` doesn't indicate format |
+
+### Why Not JSON?
+
+| Issue | Details |
+|-------|---------|
+| Bracket matching | LLMs often miss closing `}` or `]` |
+| Escaping | Quotes in content need escaping |
+| Human readability | Less natural to write |
+
+### Defaults
+
+| Element | Default |
+|---------|---------|
+| `<meta type="...">` | yaml |
+| Body (no `<body>` tag) | markdown |
 
 ## Consequences
 
-- Messages are stored as `.ping` files
-- Any text editor can create valid pings
-- Structured data goes in the body with appropriate `content-type`
-- Machines can parse front matter directly
+- Messages use `<meta>` blocks for metadata
+- Any text editor can create valid messages
+- LLMs can generate messages reliably
+- Body defaults to markdown (human-friendly)
+- Structured data uses `<body type="yaml">` or similar
